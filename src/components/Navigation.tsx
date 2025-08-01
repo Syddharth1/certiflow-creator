@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 const Navigation = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-border">
@@ -19,8 +19,11 @@ const Navigation = () => {
             <Link to="/" className="text-foreground hover:text-primary transition-colors">Home</Link>
             <Link to="/templates" className="text-foreground hover:text-primary transition-colors">Templates</Link>
             <Link to="/verify" className="text-foreground hover:text-primary transition-colors">Verify</Link>
-            {user && (
-              <Link to="/dashboard" className="text-foreground hover:text-primary transition-colors">Dashboard</Link>
+            {user && isAdmin && (
+              <Link to="/dashboard" className="text-foreground hover:text-primary transition-colors">Admin Dashboard</Link>
+            )}
+            {user && !isAdmin && (
+              <Link to="/profile" className="text-foreground hover:text-primary transition-colors">My Profile</Link>
             )}
           </div>
           
