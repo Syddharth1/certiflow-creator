@@ -1,8 +1,12 @@
 import { Award, Shield, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
+  const { user } = useAuth();
+  
   return (
     <div className="min-h-screen bg-gradient-hero">
       <Navigation />
@@ -17,12 +21,33 @@ const Index = () => {
             Complete with QR verification and professional templates.
           </p>
           <div className="flex gap-4 justify-center">
-            <Button size="lg" className="btn-hero bg-white text-primary hover:bg-white/90" onClick={() => window.location.href = '/editor'}>
-              Start Creating
-            </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" onClick={() => window.location.href = '/templates'}>
-              Browse Templates
-            </Button>
+            {user ? (
+              <>
+                <Link to="/dashboard">
+                  <Button size="lg" className="btn-hero bg-white text-primary hover:bg-white/90">
+                    Go to Dashboard
+                  </Button>
+                </Link>
+                <Link to="/templates">
+                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                    Browse Templates
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button size="lg" className="btn-hero bg-white text-primary hover:bg-white/90">
+                    Get Started
+                  </Button>
+                </Link>
+                <Link to="/templates">
+                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                    Browse Templates
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
