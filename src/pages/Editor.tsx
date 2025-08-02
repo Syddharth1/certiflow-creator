@@ -20,7 +20,8 @@ import {
   Crown,
   Zap,
   Heart,
-  Hexagon
+  Hexagon,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import QRCodeGenerator from "qrcode";
+import { ElementManager } from "@/components/ElementManager";
 
 const Editor = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,6 +38,27 @@ const Editor = () => {
   const [activeColor, setActiveColor] = useState("#3b82f6");
   const [activeTool, setActiveTool] = useState<"select" | "text" | "rectangle" | "circle" | "triangle" | "line" | "star" | "pentagon" | "hexagon" | "image">("select");
   const [selectedObject, setSelectedObject] = useState<any>(null);
+  const [canvasHistory, setCanvasHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
+  const saveToHistory = () => {
+    if (!fabricCanvas) return;
+    
+    const canvasJson = JSON.stringify(fabricCanvas.toJSON());
+    setCanvasHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(canvasJson);
+      
+      // Keep history to reasonable size
+      if (newHistory.length > 50) {
+        newHistory.shift();
+        return newHistory;
+      }
+      
+      setHistoryIndex(prev => prev + 1);
+      return newHistory;
+    });
+  };
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -85,7 +108,16 @@ const Editor = () => {
       setSelectedObject(null);
     });
 
+    // Add canvas event listeners for history tracking
+    canvas.on('object:added', saveToHistory);
+    canvas.on('object:removed', saveToHistory);
+    canvas.on('object:modified', saveToHistory);
+
     setFabricCanvas(canvas);
+    
+    // Save initial state
+    setTimeout(() => saveToHistory(), 100);
+    
     toast("Certificate editor ready! Start designing your certificate.");
 
     return () => {
@@ -330,6 +362,56 @@ const Editor = () => {
     }
   };
 
+
+  const handleUndo = () => {
+    if (historyIndex > 0 && fabricCanvas) {
+      const newIndex = historyIndex - 1;
+      const canvasState = canvasHistory[newIndex];
+      
+      fabricCanvas.loadFromJSON(canvasState).then(() => {
+        setHistoryIndex(newIndex);
+        fabricCanvas.renderAll();
+      });
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < canvasHistory.length - 1 && fabricCanvas) {
+      const newIndex = historyIndex + 1;
+      const canvasState = canvasHistory[newIndex];
+      
+      fabricCanvas.loadFromJSON(canvasState).then(() => {
+        setHistoryIndex(newIndex);
+        fabricCanvas.renderAll();
+      });
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (!fabricCanvas || !selectedObject) return;
+    
+    fabricCanvas.remove(selectedObject);
+    setSelectedObject(null);
+    fabricCanvas.renderAll();
+    toast("Object deleted");
+  };
+
+  const handleAddElement = (imageUrl: string, title: string) => {
+    if (!fabricCanvas) return;
+
+    util.loadImage(imageUrl).then((img) => {
+      const fabricImage = new FabricImage(img, {
+        left: 100,
+        top: 100,
+        scaleX: 0.5,
+        scaleY: 0.5,
+      });
+      fabricCanvas.add(fabricImage);
+      fabricCanvas.renderAll();
+      toast(`${title} added to certificate!`);
+    });
+  };
+
   const updateObjectProperty = (property: string, value: any) => {
     if (!selectedObject || !fabricCanvas) return;
 
@@ -536,76 +618,7 @@ const Editor = () => {
               </TabsContent>
 
               <TabsContent value="design" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Design Elements</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addDesignElement('medal')}
-                        className="flex items-center gap-2"
-                      >
-                        <Award className="h-4 w-4" />
-                        Medal
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addDesignElement('crown')}
-                        className="flex items-center gap-2"
-                      >
-                        <Crown className="h-4 w-4" />
-                        Crown
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addDesignElement('ribbon')}
-                        className="flex items-center gap-2"
-                      >
-                        <Zap className="h-4 w-4" />
-                        Ribbon
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addDesignElement('seal')}
-                        className="flex items-center gap-2"
-                      >
-                        <CircleIcon className="h-4 w-4" />
-                        Seal
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addDesignElement('star-badge')}
-                        className="flex items-center gap-2 col-span-2"
-                      >
-                        <Star className="h-4 w-4" />
-                        Star Badge
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Certificate Templates</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="aspect-[4/3] bg-gradient-primary rounded border cursor-pointer p-2 text-white text-xs text-center flex items-center justify-center">
-                        Modern Blue
-                      </div>
-                      <div className="aspect-[4/3] bg-gradient-gold rounded border cursor-pointer p-2 text-accent-gold-foreground text-xs text-center flex items-center justify-center">
-                        Classic Gold
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <ElementManager onAddElement={handleAddElement} />
               </TabsContent>
             </Tabs>
           </div>
@@ -617,12 +630,31 @@ const Editor = () => {
           <div className="bg-card border-b border-border p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleUndo}
+                  disabled={historyIndex <= 0}
+                >
                   <Undo className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRedo}
+                  disabled={historyIndex >= canvasHistory.length - 1}
+                >
                   <Redo className="h-4 w-4" />
                 </Button>
+                {selectedObject && (
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={handleDeleteSelected}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
               
               <div className="flex items-center gap-3">
