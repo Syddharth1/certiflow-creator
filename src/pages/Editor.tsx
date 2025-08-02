@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import QRCodeGenerator from "qrcode";
 import { ElementManager } from "@/components/ElementManager";
+import { SendCertificateDialog } from "@/components/SendCertificateDialog";
 
 const Editor = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -658,13 +659,17 @@ const Editor = () => {
               </div>
               
               <div className="flex items-center gap-3">
+                <SendCertificateDialog 
+                  canvasRef={canvasRef} 
+                  fabricCanvas={fabricCanvas} 
+                />
                 <Button variant="outline" size="sm">
                   <Save className="h-4 w-4 mr-2" />
                   Save
                 </Button>
                 <Button size="sm" className="btn-hero" onClick={handleExportPDF}>
                   <Download className="h-4 w-4 mr-2" />
-                  Export
+                  Export PNG
                 </Button>
               </div>
             </div>
