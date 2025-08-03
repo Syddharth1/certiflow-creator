@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,22 +70,74 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Certificate saved successfully:", certificate.id);
 
-    // For now, we'll return success without actually sending email
-    // The user will need to configure Resend API key for email functionality
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        certificateId: certificate.id,
-        message: "Certificate saved successfully. To enable email sending, please configure your Resend API key in Supabase secrets."
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
-      }
-    );
+    // Send email using Resend
+    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    
+    try {
+      const emailResponse = await resend.emails.send({
+        from: "Certificate System <onboarding@resend.dev>",
+        to: [recipientEmail],
+        subject: `Your Certificate: ${certificateTitle}`,
+        html: `
+          <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+            <h1 style="color: #333; margin-bottom: 20px;">Congratulations ${recipientName}!</h1>
+            <p style="color: #666; font-size: 16px; line-height: 1.5;">
+              You have received a certificate: <strong>${certificateTitle}</strong>
+            </p>
+            ${senderName ? `<p style="color: #666; font-size: 16px;">From: ${senderName}</p>` : ''}
+            ${message ? `<p style="color: #666; font-size: 16px; font-style: italic;">"${message}"</p>` : ''}
+            <div style="margin: 30px 0;">
+              <img src="data:image/png;base64,${certificateData}" alt="Certificate" style="max-width: 100%; height: auto; border: 2px solid #ddd; border-radius: 8px;" />
+            </div>
+            <p style="color: #999; font-size: 14px; margin-top: 30px;">
+              This certificate was sent through our secure certificate delivery system.
+            </p>
+          </div>
+        `,
+        attachments: [
+          {
+            filename: `${certificateTitle.replace(/[^a-zA-Z0-9]/g, '_')}.png`,
+            content: certificateData,
+          }
+        ]
+      });
+
+      console.log("Email sent successfully:", emailResponse);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          certificateId: certificate.id,
+          emailId: emailResponse.data?.id,
+          message: "Certificate saved and email sent successfully!"
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        }
+      );
+    } catch (emailError: any) {
+      console.error("Email sending failed:", emailError);
+      // Still return success since certificate was saved
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          certificateId: certificate.id,
+          message: "Certificate saved successfully, but email sending failed. Please check your Resend configuration.",
+          emailError: emailError.message
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        }
+      );
+    }
 
   } catch (error: any) {
     console.error("Error in send-certificate function:", error);
