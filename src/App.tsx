@@ -12,6 +12,7 @@ import Editor from "./pages/Editor";
 import Templates from "./pages/Templates";
 import Auth from "./pages/Auth";
 import Verify from "./pages/Verify";
+import Certificate from "./pages/Certificate";
 import NotFound from "./pages/NotFound";
 import UserDashboard from "./pages/UserDashboard";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/editor" element={<ProtectedRoute><Editor /></ProtectedRoute>} />
             <Route path="/templates" element={<Templates />} />
             <Route path="/verify" element={<Verify />} />
+            <Route path="/certificate/:verificationId" element={<Certificate />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

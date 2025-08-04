@@ -1,46 +1,79 @@
 import { useState } from "react";
-import { QrCode, Shield, CheckCircle, XCircle, Search } from "lucide-react";
+import { QrCode, Shield, CheckCircle, XCircle, Search, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import QRScanner from "@/components/QRScanner";
 
 const Verify = () => {
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationResult, setVerificationResult] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
 
   const handleVerify = async () => {
     if (!verificationCode.trim()) return;
     
     setIsVerifying(true);
     
-    // Simulate verification process
-    setTimeout(() => {
-      // Mock verification result
-      const isValid = Math.random() > 0.3; // 70% chance of valid certificate
-      
+    try {
+      const { data: certificate, error } = await supabase
+        .from("certificates")
+        .select("*")
+        .eq("verification_id", verificationCode.trim())
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      if (!certificate) {
+        setVerificationResult({
+          isValid: false,
+          certificate: null,
+          error: "Certificate not found with this verification ID"
+        });
+      } else {
+        setVerificationResult({
+          isValid: true,
+          certificate: {
+            id: certificate.verification_id,
+            title: certificate.title,
+            recipientName: certificate.recipient_name,
+            issuedBy: "Certificate System",
+            issueDate: new Date(certificate.issued_date).toLocaleDateString(),
+            verificationDate: new Date().toLocaleString(),
+            credentialId: certificate.verification_id,
+            certificateUrl: `/certificate/${certificate.verification_id}`
+          },
+          error: null
+        });
+      }
+    } catch (error: any) {
+      console.error("Verification error:", error);
       setVerificationResult({
-        isValid,
-        certificate: isValid ? {
-          id: "CERT-2024-001",
-          title: "Excellence in Leadership",
-          recipientName: "John Doe",
-          issuedBy: "Leadership Institute",
-          issueDate: "January 15, 2024",
-          verificationDate: new Date().toLocaleString(),
-          credentialId: verificationCode
-        } : null,
-        error: !isValid ? "Certificate not found or has been revoked" : null
+        isValid: false,
+        certificate: null,
+        error: "Failed to verify certificate. Please try again."
       });
-      
+    } finally {
       setIsVerifying(false);
-    }, 2000);
+    }
   };
 
   const handleScanQR = () => {
-    // In a real implementation, this would open camera/QR scanner
-    alert("QR Scanner feature coming soon! For now, please enter the verification code manually.");
+    setShowQRScanner(true);
+  };
+
+  const handleQRScanResult = (result: string) => {
+    setVerificationCode(result);
+    setShowQRScanner(false);
+    // Auto-verify after scanning
+    setTimeout(() => {
+      handleVerify();
+    }, 500);
   };
 
   return (
@@ -179,6 +212,18 @@ const Verify = () => {
                       <p className="text-xs text-muted-foreground mt-2">
                         Verified on {verificationResult.certificate.verificationDate}
                       </p>
+                      {verificationResult.certificate.certificateUrl && (
+                        <div className="mt-4">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.open(verificationResult.certificate.certificateUrl, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            View & Download Certificate
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -228,6 +273,14 @@ const Verify = () => {
             </Card>
           </div>
         </div>
+
+        {/* QR Scanner Modal */}
+        {showQRScanner && (
+          <QRScanner
+            onScan={handleQRScanResult}
+            onClose={() => setShowQRScanner(false)}
+          />
+        )}
       </div>
     </div>
   );

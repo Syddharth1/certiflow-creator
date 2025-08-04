@@ -50,6 +50,9 @@ const handler = async (req: Request): Promise<Response> => {
       message 
     }: SendCertificateRequest = await req.json();
 
+    // Generate unique verification ID
+    const verificationId = `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    
     // Save certificate to database
     const { data: certificate, error: saveError } = await supabase
       .from("certificates")
@@ -58,6 +61,7 @@ const handler = async (req: Request): Promise<Response> => {
         title: certificateTitle,
         recipient_name: recipientName,
         recipient_email: recipientEmail,
+        verification_id: verificationId,
         certificate_data: { imageData: certificateData },
         certificate_url: certificateData // Store the image data
       })
@@ -69,6 +73,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("Certificate saved successfully:", certificate.id);
+
+    // Generate QR code for verification
+    const verificationUrl = `https://7aae85cb-230b-485f-a1f9-16cb028e5038.lovableproject.com/certificate/${verificationId}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(verificationUrl)}`;
 
     // Send email using Resend
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -86,9 +94,25 @@ const handler = async (req: Request): Promise<Response> => {
             </p>
             ${senderName ? `<p style="color: #666; font-size: 16px;">From: ${senderName}</p>` : ''}
             ${message ? `<p style="color: #666; font-size: 16px; font-style: italic;">"${message}"</p>` : ''}
-            <div style="margin: 30px 0;">
+            
+            <div style="margin: 30px 0; text-align: center;">
               <img src="data:image/png;base64,${certificateData}" alt="Certificate" style="max-width: 100%; height: auto; border: 2px solid #ddd; border-radius: 8px;" />
             </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin: 0 0 15px 0; color: #333;">Certificate Verification</h3>
+              <p style="margin: 10px 0; color: #666;">Verification ID: <strong>${verificationId}</strong></p>
+              <p style="margin: 10px 0; color: #666;">
+                <a href="${verificationUrl}" style="color: #2563eb; text-decoration: none;">
+                  View and Download Certificate
+                </a>
+              </p>
+              <div style="text-align: center; margin: 15px 0;">
+                <img src="${qrCodeUrl}" alt="QR Code for verification" style="border: 1px solid #ddd;" />
+                <p style="font-size: 12px; color: #999; margin: 5px 0;">Scan QR code to verify</p>
+              </div>
+            </div>
+            
             <p style="color: #999; font-size: 14px; margin-top: 30px;">
               This certificate was sent through our secure certificate delivery system.
             </p>

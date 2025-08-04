@@ -27,6 +27,7 @@ export type Database = {
           title: string
           updated_at: string | null
           user_id: string
+          verification_id: string
         }
         Insert: {
           certificate_data: Json
@@ -40,6 +41,7 @@ export type Database = {
           title: string
           updated_at?: string | null
           user_id: string
+          verification_id: string
         }
         Update: {
           certificate_data?: Json
@@ -53,6 +55,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string
+          verification_id?: string
         }
         Relationships: [
           {
