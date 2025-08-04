@@ -71,11 +71,14 @@ export const SendCertificateDialog = ({ canvasRef, fabricCanvas }: SendCertifica
     setLoading(true);
     try {
       // Get canvas as image data
-      const certificateData = fabricCanvas.toDataURL({
+      const dataURL = fabricCanvas.toDataURL({
         format: "png",
         quality: 1,
         multiplier: 2,
       });
+      
+      // Extract base64 data without the data URL prefix
+      const certificateData = dataURL.split(',')[1];
 
       const { data, error } = await supabase.functions.invoke('send-certificate', {
         body: {
