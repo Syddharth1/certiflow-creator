@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Award, Plus, Send, FileText } from "lucide-react";
+import { Award, Plus, Send, FileText, Download, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,6 +42,38 @@ const UserDashboard = () => {
       console.error("Error fetching certificates:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewCertificate = (cert: any) => {
+    if (cert.certificate_url) {
+      window.open(`/certificate/${cert.verification_id}`, '_blank');
+    } else if (cert.certificate_data?.imageData) {
+      // Create a temporary URL for the image data
+      const imageData = cert.certificate_data.imageData;
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head><title>${cert.title}</title></head>
+            <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5;">
+              <img src="${imageData}" style="max-width:100%;max-height:100%;object-fit:contain;" alt="${cert.title}" />
+            </body>
+          </html>
+        `);
+      }
+    }
+  };
+
+  const handleDownloadCertificate = (cert: any) => {
+    if (cert.certificate_data?.imageData) {
+      const imageData = cert.certificate_data.imageData;
+      const link = document.createElement('a');
+      link.href = imageData;
+      link.download = `${cert.title.replace(/[^a-z0-9]/gi, '_')}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -180,7 +212,25 @@ const UserDashboard = () => {
                             Issued: {new Date(cert.issued_date).toLocaleDateString()}
                           </p>
                         </div>
-                        <Badge variant="secondary">Received</Badge>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewCertificate(cert)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadCertificate(cert)}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                          <Badge variant="secondary">Received</Badge>
+                        </div>
                       </div>
                     ))}
                   </div>
