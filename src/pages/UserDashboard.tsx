@@ -49,8 +49,12 @@ const UserDashboard = () => {
     if (cert.certificate_url) {
       window.open(`/certificate/${cert.verification_id}`, '_blank');
     } else if (cert.certificate_data?.imageData) {
-      // Create a temporary URL for the image data
-      const imageData = cert.certificate_data.imageData;
+      // Ensure the image data has the proper data URL format
+      let imageData = cert.certificate_data.imageData;
+      if (!imageData.startsWith('data:')) {
+        imageData = `data:image/png;base64,${imageData}`;
+      }
+      
       const newWindow = window.open('', '_blank');
       if (newWindow) {
         newWindow.document.write(`
@@ -67,7 +71,12 @@ const UserDashboard = () => {
 
   const handleDownloadCertificate = (cert: any) => {
     if (cert.certificate_data?.imageData) {
-      const imageData = cert.certificate_data.imageData;
+      // Ensure the image data has the proper data URL format
+      let imageData = cert.certificate_data.imageData;
+      if (!imageData.startsWith('data:')) {
+        imageData = `data:image/png;base64,${imageData}`;
+      }
+      
       const link = document.createElement('a');
       link.href = imageData;
       link.download = `${cert.title.replace(/[^a-z0-9]/gi, '_')}.png`;
