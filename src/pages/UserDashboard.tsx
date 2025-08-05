@@ -33,7 +33,8 @@ const UserDashboard = () => {
       const { data: received } = await supabase
         .from("certificates")
         .select("*")
-        .eq("recipient_email", user?.email);
+        .eq("recipient_email", user?.email)
+        .neq("user_id", user?.id); // Exclude certificates created by the user
 
       setMyCertificates(created || []);
       setReceivedCertificates(received || []);
