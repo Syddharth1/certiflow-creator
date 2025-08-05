@@ -21,7 +21,16 @@ import {
   Zap,
   Heart,
   Hexagon,
-  Trash2
+  Trash2,
+  Bold,
+  Italic,
+  Underline,
+  Lock,
+  Unlock,
+  MoveUp,
+  MoveDown,
+  Send,
+  BringToFront
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,32 +79,6 @@ const Editor = () => {
       backgroundColor: "#ffffff",
     });
 
-    // Add default certificate border
-    const border = new Rect({
-      left: 20,
-      top: 20,
-      width: 760,
-      height: 560,
-      fill: "transparent",
-      stroke: "#d4af37",
-      strokeWidth: 4,
-      selectable: false,
-      evented: false,
-    });
-    canvas.add(border);
-
-    // Add default title
-    const title = new IText("Certificate of Achievement", {
-      left: 400,
-      top: 150,
-      fontSize: 36,
-      fontFamily: "Playfair Display",
-      fill: "#1e293b",
-      textAlign: "center",
-      originX: "center",
-    });
-    canvas.add(title);
-
     // Selection event handler
     canvas.on("selection:created", (e) => {
       setSelectedObject(e.selected?.[0] || null);
@@ -119,7 +102,7 @@ const Editor = () => {
     // Save initial state
     setTimeout(() => saveToHistory(), 100);
     
-    toast("Certificate editor ready! Start designing your certificate.");
+    toast("Blank canvas ready! Start creating your design.");
 
     return () => {
       canvas.dispose();
@@ -419,6 +402,69 @@ const Editor = () => {
     selectedObject.set(property, value);
     fabricCanvas.renderAll();
   };
+
+  const toggleTextStyle = (style: 'fontWeight' | 'fontStyle' | 'underline') => {
+    if (!selectedObject || selectedObject.type !== "i-text" || !fabricCanvas) return;
+
+    if (style === 'fontWeight') {
+      const newWeight = selectedObject.fontWeight === 'bold' ? 'normal' : 'bold';
+      selectedObject.set('fontWeight', newWeight);
+    } else if (style === 'fontStyle') {
+      const newStyle = selectedObject.fontStyle === 'italic' ? 'normal' : 'italic';
+      selectedObject.set('fontStyle', newStyle);
+    } else if (style === 'underline') {
+      const newUnderline = !selectedObject.underline;
+      selectedObject.set('underline', newUnderline);
+    }
+
+    fabricCanvas.renderAll();
+  };
+
+  const toggleLock = () => {
+    if (!selectedObject || !fabricCanvas) return;
+
+    const isLocked = selectedObject.lockMovementX;
+    selectedObject.set({
+      lockMovementX: !isLocked,
+      lockMovementY: !isLocked,
+      lockRotation: !isLocked,
+      lockScalingX: !isLocked,
+      lockScalingY: !isLocked,
+      selectable: isLocked,
+      evented: isLocked
+    });
+
+    fabricCanvas.renderAll();
+    toast(isLocked ? "Object unlocked" : "Object locked");
+  };
+
+  const bringToFront = () => {
+    if (!selectedObject || !fabricCanvas) return;
+    fabricCanvas.bringObjectToFront(selectedObject);
+    fabricCanvas.renderAll();
+    toast("Brought to front");
+  };
+
+  const sendToBack = () => {
+    if (!selectedObject || !fabricCanvas) return;
+    fabricCanvas.sendObjectToBack(selectedObject);
+    fabricCanvas.renderAll();
+    toast("Sent to back");
+  };
+
+  const bringForward = () => {
+    if (!selectedObject || !fabricCanvas) return;
+    fabricCanvas.bringObjectForward(selectedObject);
+    fabricCanvas.renderAll();
+    toast("Moved forward");
+  };
+
+  const sendBackward = () => {
+    if (!selectedObject || !fabricCanvas) return;
+    fabricCanvas.sendObjectBackwards(selectedObject);
+    fabricCanvas.renderAll();
+    toast("Moved backward");
+  };
     return (
       <div className="min-h-screen bg-gradient-subtle">
         <div className="flex h-screen">
@@ -601,8 +647,18 @@ const Editor = () => {
                         >
                           <option value="Inter">Inter</option>
                           <option value="Playfair Display">Playfair Display</option>
+                          <option value="Roboto">Roboto</option>
+                          <option value="Open Sans">Open Sans</option>
+                          <option value="Lato">Lato</option>
+                          <option value="Montserrat">Montserrat</option>
+                          <option value="Poppins">Poppins</option>
+                          <option value="Source Sans Pro">Source Sans Pro</option>
+                          <option value="Merriweather">Merriweather</option>
+                          <option value="Oswald">Oswald</option>
                           <option value="Arial">Arial</option>
                           <option value="Times New Roman">Times New Roman</option>
+                          <option value="Georgia">Georgia</option>
+                          <option value="Helvetica">Helvetica</option>
                         </select>
                       </div>
                       <div>
@@ -612,6 +668,36 @@ const Editor = () => {
                           value={selectedObject.fill || "#000000"}
                           onChange={(e) => updateObjectProperty("fill", e.target.value)}
                         />
+                      </div>
+                      
+                      <div>
+                        <Label>Text Style</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Button
+                            variant={selectedObject.fontWeight === 'bold' ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleTextStyle('fontWeight')}
+                            className="flex-1"
+                          >
+                            <Bold className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant={selectedObject.fontStyle === 'italic' ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleTextStyle('fontStyle')}
+                            className="flex-1"
+                          >
+                            <Italic className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant={selectedObject.underline ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleTextStyle('underline')}
+                            className="flex-1"
+                          >
+                            <Underline className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -647,15 +733,57 @@ const Editor = () => {
                 >
                   <Redo className="h-4 w-4" />
                 </Button>
-                {selectedObject && (
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={handleDeleteSelected}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+                 {selectedObject && (
+                   <>
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       onClick={toggleLock}
+                       title={selectedObject.lockMovementX ? "Unlock" : "Lock"}
+                     >
+                       {selectedObject.lockMovementX ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                     </Button>
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       onClick={bringToFront}
+                       title="Bring to Front"
+                     >
+                       <BringToFront className="h-4 w-4" />
+                     </Button>
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       onClick={bringForward}
+                       title="Bring Forward"
+                     >
+                       <MoveUp className="h-4 w-4" />
+                     </Button>
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       onClick={sendBackward}
+                       title="Send Backward"
+                     >
+                       <MoveDown className="h-4 w-4" />
+                     </Button>
+                     <Button 
+                       variant="outline" 
+                       size="sm" 
+                       onClick={sendToBack}
+                       title="Send to Back"
+                     >
+                       <Send className="h-4 w-4" />
+                     </Button>
+                     <Button 
+                       variant="destructive" 
+                       size="sm" 
+                       onClick={handleDeleteSelected}
+                     >
+                       <Trash2 className="h-4 w-4" />
+                     </Button>
+                   </>
+                 )}
               </div>
               
               <div className="flex items-center gap-3">
