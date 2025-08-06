@@ -30,7 +30,8 @@ import {
   MoveUp,
   MoveDown,
   Send,
-  BringToFront
+  BringToFront,
+  Hash
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,6 +51,7 @@ const Editor = () => {
   const [selectedObject, setSelectedObject] = useState<any>(null);
   const [canvasHistory, setCanvasHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [certificateId, setCertificateId] = useState<string>("");
 
   const saveToHistory = () => {
     if (!fabricCanvas) return;
@@ -217,17 +219,31 @@ const Editor = () => {
     });
   };
 
+  const generateCertificateId = () => {
+    if (!certificateId) {
+      const newId = `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+      setCertificateId(newId);
+      return newId;
+    }
+    return certificateId;
+  };
+
   const handleAddQRCode = async () => {
     if (!fabricCanvas) return;
 
     try {
-      const qrCodeData = "https://certverify.com/verify/CERT-2024-001";
-      const qrCodeUrl = await QRCodeGenerator.toDataURL(qrCodeData, {
-        width: 100,
+      const certId = generateCertificateId();
+      const verificationUrl = `https://7aae85cb-230b-485f-a1f9-16cb028e5038.lovableproject.com/certificate/${certId}`;
+      const qrCodeUrl = await QRCodeGenerator.toDataURL(verificationUrl, {
+        width: 120,
         margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
       });
 
-      util.loadImage(qrCodeUrl).then((img) => {
+      util.loadImage(qrCodeUrl, { crossOrigin: 'anonymous' }).then((img) => {
         const qrCode = new FabricImage(img, {
           left: 650,
           top: 450,
@@ -236,12 +252,35 @@ const Editor = () => {
         });
         fabricCanvas.add(qrCode);
         fabricCanvas.renderAll();
+      }).catch((error) => {
+        console.error("Error loading QR code:", error);
+        toast.error("Failed to load QR code image");
       });
 
-      toast("QR code added! Recipients can scan to verify authenticity.");
+      toast("QR code added! Recipients can scan to verify the certificate.");
     } catch (error) {
+      console.error("QR code generation error:", error);
       toast.error("Failed to generate QR code");
     }
+  };
+
+  const handleAddCertificateId = () => {
+    if (!fabricCanvas) return;
+
+    const certId = generateCertificateId();
+    const text = new IText(`Certificate ID: ${certId}`, {
+      left: 50,
+      top: 550,
+      fontSize: 12,
+      fill: "#666666",
+      fontFamily: "Inter",
+      fontWeight: "normal",
+    });
+    
+    fabricCanvas.add(text);
+    fabricCanvas.setActiveObject(text);
+    fabricCanvas.renderAll();
+    toast("Certificate ID added to the certificate!");
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -528,26 +567,35 @@ const Editor = () => {
                     <CardTitle className="text-sm">Basic Tools</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant={activeTool === "text" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handleToolClick("text")}
-                        className="flex items-center gap-2"
-                      >
-                        <Type className="h-4 w-4" />
-                        Text
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleAddQRCode}
-                        className="flex items-center gap-2"
-                      >
-                        <QrCode className="h-4 w-4" />
-                        QR Code
-                      </Button>
-                    </div>
+                     <div className="grid grid-cols-2 gap-2">
+                       <Button
+                         variant={activeTool === "text" ? "default" : "outline"}
+                         size="sm"
+                         onClick={() => handleToolClick("text")}
+                         className="flex items-center gap-2"
+                       >
+                         <Type className="h-4 w-4" />
+                         Text
+                       </Button>
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={handleAddQRCode}
+                         className="flex items-center gap-2"
+                       >
+                         <QrCode className="h-4 w-4" />
+                         QR Code
+                       </Button>
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={handleAddCertificateId}
+                         className="flex items-center gap-2 col-span-2"
+                       >
+                         <Hash className="h-4 w-4" />
+                         Certificate ID
+                       </Button>
+                     </div>
                     
                     <div>
                       <Label htmlFor="image-upload" className="cursor-pointer">
@@ -829,10 +877,11 @@ const Editor = () => {
               </div>
               
               <div className="flex items-center gap-3">
-                <SendCertificateDialog 
-                  canvasRef={canvasRef} 
-                  fabricCanvas={fabricCanvas} 
-                />
+                 <SendCertificateDialog 
+                   canvasRef={canvasRef} 
+                   fabricCanvas={fabricCanvas}
+                   certificateId={certificateId}
+                 />
                 <Button variant="outline" size="sm" onClick={handleSave}>
                   <Save className="h-4 w-4 mr-2" />
                   Save

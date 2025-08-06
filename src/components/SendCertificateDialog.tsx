@@ -14,9 +14,10 @@ import jsPDF from "jspdf";
 interface SendCertificateDialogProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   fabricCanvas: any;
+  certificateId?: string;
 }
 
-export const SendCertificateDialog = ({ canvasRef, fabricCanvas }: SendCertificateDialogProps) => {
+export const SendCertificateDialog = ({ canvasRef, fabricCanvas, certificateId }: SendCertificateDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
