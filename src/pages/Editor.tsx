@@ -284,6 +284,7 @@ const Editor = () => {
         format: "png",
         quality: 1,
         multiplier: 2,
+        enableRetinaScaling: false,
       });
       
       // Create download link
@@ -421,7 +422,7 @@ const Editor = () => {
   const handleAddElement = (imageUrl: string, title: string) => {
     if (!fabricCanvas) return;
 
-    util.loadImage(imageUrl).then((img) => {
+    util.loadImage(imageUrl, { crossOrigin: 'anonymous' }).then((img) => {
       const fabricImage = new FabricImage(img, {
         left: 100,
         top: 100,
@@ -431,6 +432,9 @@ const Editor = () => {
       fabricCanvas.add(fabricImage);
       fabricCanvas.renderAll();
       toast(`${title} added to certificate!`);
+    }).catch((error) => {
+      console.error("Error loading image:", error);
+      toast.error("Failed to load element image");
     });
   };
 

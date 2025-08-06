@@ -46,6 +46,7 @@ export const SendCertificateDialog = ({ canvasRef, fabricCanvas }: SendCertifica
         format: "png",
         quality: 1,
         multiplier: 2,
+        enableRetinaScaling: false,
       });
 
       // Create PDF
@@ -92,6 +93,7 @@ export const SendCertificateDialog = ({ canvasRef, fabricCanvas }: SendCertifica
         format: "png",
         quality: 1,
         multiplier: 2,
+        enableRetinaScaling: false,
       });
       
       // Extract base64 data without the data URL prefix
@@ -146,6 +148,7 @@ export const SendCertificateDialog = ({ canvasRef, fabricCanvas }: SendCertifica
         format: "png",
         quality: 1,
         multiplier: 2,
+        enableRetinaScaling: false,
       });
 
       // Create Gmail compose URL
