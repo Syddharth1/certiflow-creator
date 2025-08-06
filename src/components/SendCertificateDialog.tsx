@@ -28,7 +28,17 @@ export const SendCertificateDialog = ({ canvasRef, fabricCanvas }: SendCertifica
   });
 
   const handleDownloadPDF = () => {
-    if (!fabricCanvas) return;
+    if (!fabricCanvas) {
+      toast.error("Canvas not ready");
+      return;
+    }
+
+    // Check if canvas has any objects
+    const objects = fabricCanvas.getObjects();
+    if (objects.length === 0) {
+      toast.error("Canvas is empty. Please add some elements before downloading.");
+      return;
+    }
 
     try {
       // Get canvas as image data
@@ -65,6 +75,13 @@ export const SendCertificateDialog = ({ canvasRef, fabricCanvas }: SendCertifica
   const handleSendThroughSystem = async () => {
     if (!fabricCanvas || !formData.recipientEmail || !formData.recipientName) {
       toast.error("Please fill in recipient email and name");
+      return;
+    }
+
+    // Check if canvas has any objects
+    const objects = fabricCanvas.getObjects();
+    if (objects.length === 0) {
+      toast.error("Canvas is empty. Please add some elements before sending.");
       return;
     }
 
@@ -113,6 +130,13 @@ export const SendCertificateDialog = ({ canvasRef, fabricCanvas }: SendCertifica
   const handleSendThroughGmail = () => {
     if (!fabricCanvas || !formData.recipientEmail) {
       toast.error("Please fill in recipient email");
+      return;
+    }
+
+    // Check if canvas has any objects
+    const objects = fabricCanvas.getObjects();
+    if (objects.length === 0) {
+      toast.error("Canvas is empty. Please add some elements before sending.");
       return;
     }
 

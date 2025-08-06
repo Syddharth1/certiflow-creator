@@ -267,22 +267,60 @@ const Editor = () => {
   };
 
   const handleExportPDF = () => {
-    if (!fabricCanvas) return;
+    if (!fabricCanvas) {
+      toast.error("Canvas not ready");
+      return;
+    }
     
-    // In a real implementation, we'd use jsPDF here
-    const dataURL = fabricCanvas.toDataURL({
-      format: "png",
-      quality: 1,
-      multiplier: 2,
-    });
+    // Check if canvas has any objects
+    const objects = fabricCanvas.getObjects();
+    if (objects.length === 0) {
+      toast.error("Canvas is empty. Please add some elements before exporting.");
+      return;
+    }
     
-    // Create download link
-    const link = document.createElement("a");
-    link.download = "certificate.png";
-    link.href = dataURL;
-    link.click();
-    
-    toast("Certificate exported successfully!");
+    try {
+      const dataURL = fabricCanvas.toDataURL({
+        format: "png",
+        quality: 1,
+        multiplier: 2,
+      });
+      
+      // Create download link
+      const link = document.createElement("a");
+      link.download = "certificate.png";
+      link.href = dataURL;
+      link.click();
+      
+      toast.success("Certificate exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export certificate. Please try again.");
+    }
+  };
+
+  const handleSave = async () => {
+    if (!fabricCanvas) {
+      toast.error("Canvas not ready");
+      return;
+    }
+
+    // Check if canvas has any objects
+    const objects = fabricCanvas.getObjects();
+    if (objects.length === 0) {
+      toast.error("Canvas is empty. Please add some elements before saving.");
+      return;
+    }
+
+    try {
+      // Save canvas state to localStorage for now (in a real app, you'd save to database)
+      const canvasData = JSON.stringify(fabricCanvas.toJSON());
+      localStorage.setItem('savedCertificate', canvasData);
+      toast.success("Certificate saved successfully!");
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save certificate. Please try again.");
+    }
   };
 
   const addDesignElement = async (type: string) => {
@@ -791,7 +829,7 @@ const Editor = () => {
                   canvasRef={canvasRef} 
                   fabricCanvas={fabricCanvas} 
                 />
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleSave}>
                   <Save className="h-4 w-4 mr-2" />
                   Save
                 </Button>
